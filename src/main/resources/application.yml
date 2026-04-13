@@ -1,0 +1,32 @@
+server:
+  port: 8083 # C?ng m?c ??nh cho Booking Service [cite: 190]
+
+spring:
+  application:
+    name: booking-service
+
+  # C?u hình MariaDB (booking_db)
+  datasource:
+    url: jdbc:mariadb://localhost:3306/booking_db
+    username: root
+    password: sapassword
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  # C?u hình RabbitMQ (Broker) [cite: 137, 192]
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://172.16.54.193:8761/eureka/
