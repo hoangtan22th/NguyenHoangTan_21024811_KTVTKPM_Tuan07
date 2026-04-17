@@ -34,4 +34,9 @@ public class BookingController {
         Booking booking = bookingService.getBookingById(id);
         return new ResponseEntity<>(booking, HttpStatus.OK);
     }
+    @GetMapping("/movie/{movieId}/seats")
+    public ResponseEntity<List<String>> getBookedSeats(@PathVariable Long movieId) {
+        List<String> bookedSeats = bookingService.getBookedSeatsForMovie(movieId);
+        return new ResponseEntity<>(bookedSeats, HttpStatus.OK);
+    }
 }

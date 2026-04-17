@@ -31,9 +31,17 @@ spring:
           initial-interval: 2000ms # Lần thử đầu cách 2 giây
           max-attempts: 3 # Thử tối đa 3 lần
           max-interval: 10000ms # Tối đa cách nhau 10s
-
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # Phải có dòng này thì Dashboard mới đọc được dữ liệu
+  endpoint:
+    health:
+      show-details: always
 eureka:
   instance:
+    health-check-url-path: /actuator/health
     hostname: 172.20.34.136       # Ép đè luôn cái tên mshome.net
     ip-address: 172.20.34.136     # Khai báo IP thật
     prefer-ip-address: true

@@ -221,6 +221,9 @@ public class BookingService {
     @RabbitListener(queues = {RabbitMQConfig.QUEUE_BOOKING_UPDATE_SUCCESS, RabbitMQConfig.QUEUE_BOOKING_UPDATE_FAILED})
     @Transactional
     public void handlePaymentResult(PaymentEventMessage paymentResult) {
+
+//        demo gây lỗi
+//        if (true) throw new RuntimeException("TESTING DLQ: Cố tình gây lỗi để xem tin nhắn bay vào sọt rác!");
         log.info("<<<<<<<<<<<<<< NHẬN EVENT TỪ PAYMENT <<<<<<<<<<<<<<");
         log.debug("[DEBUG] Cục JSON Payment gửi về ép kiểu thành công: {}", paymentResult);
 
@@ -257,5 +260,9 @@ public class BookingService {
         // 4. Lưu Booking xuống DB
         bookingRepository.save(existingBooking);
         log.info("<<<<<<<<<<<<<< KẾT THÚC CẬP NHẬT DB <<<<<<<<<<<<<<\n");
+    }
+    public List<String> getBookedSeatsForMovie(Long movieId) {
+        log.info("Đang lấy danh sách ghế đã đặt cho phim ID: {}", movieId);
+        return bookingRepository.findBookedSeatsByMovieId(movieId);
     }
 }
