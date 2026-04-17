@@ -19,10 +19,18 @@ spring:
 
   # C?u h�nh RabbitMQ (Broker) [cite: 137, 192]
   rabbitmq:
-    host: localhost
+    host: 172.20.35.147
     port: 5672
     username: guest
     password: guest
+    # --- THÊM PHẦN BONUS RETRY VÀO ĐÂY ---
+    listener:
+      simple:
+        retry:
+          enabled: true # Bật tính năng thử lại
+          initial-interval: 2000ms # Lần thử đầu cách 2 giây
+          max-attempts: 3 # Thử tối đa 3 lần
+          max-interval: 10000ms # Tối đa cách nhau 10s
 
 eureka:
   instance:
@@ -32,4 +40,4 @@ eureka:
     instance-id: ${eureka.instance.ip-address}:${spring.application.name}:${server.port} # Hiện cho đẹp trên Eureka
   client:
     service-url:
-      defaultZone: http://172.20.34.113:8761/eureka/
+      defaultZone: http://172.20.35.147:8761/eureka/

@@ -28,4 +28,10 @@ public class BookingController {
         List<Booking> bookings = bookingService.getAllBookings();
         return new ResponseEntity<>(bookings, HttpStatus.OK);
     }
+    // THÊM ĐOẠN NÀY ĐỂ GET BOOKING THEO ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Booking> getBookingById(@PathVariable Long id) {
+        Booking booking = bookingService.getBookingById(id);
+        return new ResponseEntity<>(booking, HttpStatus.OK);
+    }
 }
