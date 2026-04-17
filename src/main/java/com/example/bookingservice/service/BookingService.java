@@ -1,8 +1,6 @@
 package com.example.bookingservice.service;
 
-import com.example.bookingservice.client.UserClient; // Interface Feign để gọi User Service
 import com.example.bookingservice.dto.BookingRequest;
-import com.example.bookingservice.dto.UserDTO;
 import com.example.bookingservice.entity.Booking;
 import com.example.bookingservice.entity.BookingStatus;
 import com.example.bookingservice.repository.BookingRepository;
@@ -26,56 +24,47 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final RabbitTemplate rabbitTemplate; // Dùng để publish event sang RabbitMQ [cite: 137]
-    private final UserClient userClient; // Dùng Feign Client để validate user từ User Service
 
     /**
-     * Quy trình tạo Booking:
-     * 1. Validate User (Đồng bộ qua REST)
-     * 2. Lưu Booking PENDING vào MariaDB
-     * 3. Publish event BOOKING_CREATED (Bất đồng bộ)
+     * Quy trình tạo Booking (Event-Driven chuẩn):
+     * 1. Nhận thông tin từ Frontend/Gateway (Tin tưởng userId từ Token/Gateway truyền xuống)
+     * 2. Lưu Booking với trạng thái PENDING vào MariaDB
+     * 3. Publish event BOOKING_CREATED (Bất đồng bộ) cho Payment xử lý
      */
     @Transactional
     public Booking createBooking(BookingRequest request) {
 
-//        // Bước 1: KIỂM TRA USER THẬT (Gọi sang User Service qua Feign)
-//        log.info("Đang kiểm tra thông tin User ID: {} từ User Service...", request.getUserId());
-//        try {
-//            UserDTO user = userClient.getUserById(request.getUserId());
-//            log.info("Xác nhận User tồn tại: {}", user.getUsername());
-//        } catch (Exception e) {
-//            log.error("Lỗi: Không tìm thấy User ID {} hoặc User Service không hoạt động", request.getUserId());
-//            throw new RuntimeException("User không tồn tại hoặc lỗi kết nối hệ thống. Không thể đặt vé!");
-//        }
-
-        // Bước 2: TẠO ENTITY VÀ LƯU VÀO DATABASE
+        // Bước 1: TẠO ENTITY VÀ LƯU VÀO DATABASE
         Booking booking = new Booking();
         booking.setUserId(request.getUserId());
         booking.setMovieId(request.getMovieId());
         booking.setSeatNumber(request.getSeatNumber());
         booking.setTotalPrice(request.getTotalPrice());
 
-        // Mặc định trạng thái là PENDING khi mới tạo
+        // Mặc định trạng thái là PENDING khi mới tạo để chờ Payment Service xử lý
         booking.setStatus(BookingStatus.PENDING);
 
         Booking savedBooking = bookingRepository.save(booking);
         log.info("Đã lưu booking thành công vào MariaDB: ID = {}, Status = {}", savedBooking.getId(), savedBooking.getStatus());
 
-//        // Bước 3: PUBLISH EVENT BOOKING_CREATED LÊN RABBITMQ [cite: 139, 172]
-//        // KHÔNG xử lý thanh toán trực tiếp tại đây theo yêu cầu kiến trúc [cite: 173]
-//        log.info("Chuẩn bị publish event BOOKING_CREATED lên RabbitMQ exchange: {}", RabbitMQConfig.EXCHANGE);
-//
-//        try {
-//            rabbitTemplate.convertAndSend(
-//                    RabbitMQConfig.EXCHANGE,
-//                    RabbitMQConfig.ROUTING_KEY_BOOKING,
-//                    savedBooking
-//            );
-//            log.info("Đã bắn event thành công cho Booking ID: {}", savedBooking.getId());
-//        } catch (Exception e) {
-//            log.error("Lỗi khi bắn event lên RabbitMQ: {}", e.getMessage());
-//            // Tùy chọn: Có thể throw exception để rollback DB hoặc log để xử lý sau (Dead Letter Queue) [cite: 199]
-//        }
+        // Bước 2: PUBLISH EVENT BOOKING_CREATED LÊN RABBITMQ [cite: 139, 172]
+        // KHÔNG xử lý thanh toán trực tiếp tại đây theo yêu cầu kiến trúc [cite: 173]
+        log.info("Chuẩn bị publish event BOOKING_CREATED lên RabbitMQ exchange: {}", RabbitMQConfig.EXCHANGE);
 
+        try {
+            // Gửi toàn bộ object savedBooking (đã được parse sang JSON nhờ cấu hình MessageConverter)
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE,
+                    RabbitMQConfig.ROUTING_KEY_BOOKING,
+                    savedBooking
+            );
+            log.info("Đã bắn event thành công cho Booking ID: {}", savedBooking.getId());
+        } catch (Exception e) {
+            log.error("Lỗi khi bắn event lên RabbitMQ: {}", e.getMessage());
+            // Trong thực tế có thể dùng Dead Letter Queue [cite: 199] hoặc Outbox Pattern ở đây
+        }
+
+        // Trả kết quả về ngay cho người dùng mà không cần chờ thanh toán
         return savedBooking;
     }
 

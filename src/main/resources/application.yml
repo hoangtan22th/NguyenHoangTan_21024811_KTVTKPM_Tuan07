@@ -5,11 +5,11 @@ spring:
   application:
     name: booking-service
 
-  # C?u h�nh MariaDB (booking_db)
+  # C?u h�nh MariaDB (booking_db)
   datasource:
     url: jdbc:mariadb://localhost:3306/booking_db
     username: root
-    password: sapassword
+    password: root
     driver-class-name: org.mariadb.jdbc.Driver
 
   jpa:
@@ -17,7 +17,7 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  # C?u h�nh RabbitMQ (Broker) [cite: 137, 192]
+  # C?u h�nh RabbitMQ (Broker) [cite: 137, 192]
   rabbitmq:
     host: localhost
     port: 5672
@@ -26,7 +26,10 @@ spring:
 
 eureka:
   instance:
+    hostname: 172.20.34.136       # Ép đè luôn cái tên mshome.net
+    ip-address: 172.20.34.136     # Khai báo IP thật
     prefer-ip-address: true
+    instance-id: ${eureka.instance.ip-address}:${spring.application.name}:${server.port} # Hiện cho đẹp trên Eureka
   client:
     service-url:
-      defaultZone: http://172.16.54.193:8761/eureka/
+      defaultZone: http://172.20.34.113:8761/eureka/

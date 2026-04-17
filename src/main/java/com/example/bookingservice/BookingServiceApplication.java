@@ -7,7 +7,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients // <--- Thêm dòng này
 public class BookingServiceApplication {
 
     public static void main(String[] args) {
