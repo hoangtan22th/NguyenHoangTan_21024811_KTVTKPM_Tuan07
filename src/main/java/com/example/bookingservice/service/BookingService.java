@@ -115,11 +115,9 @@ package com.example.bookingservice.service;
 import com.example.bookingservice.dto.BookingCreatedEvent;
 import com.example.bookingservice.dto.BookingRequest;
 import com.example.bookingservice.dto.PaymentEventMessage;
-import com.example.bookingservice.entity.Booking;
-import com.example.bookingservice.entity.BookingStatus;
-import com.example.bookingservice.entity.SeatState;
-import com.example.bookingservice.entity.SeatStatus;
+import com.example.bookingservice.entity.*;
 import com.example.bookingservice.repository.BookingRepository;
+import com.example.bookingservice.repository.EventLogRepository;
 import com.example.bookingservice.repository.SeatStatusRepository;
 import com.example.bookingservice.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
@@ -132,10 +130,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Booking Service - Core Service xử lý đặt vé
- * Áp dụng kiến trúc Event-Driven Architecture + Cơ chế Giữ ghế (Seat Holding)
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -144,7 +138,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final SeatStatusRepository seatStatusRepository; // Bổ sung Repository quản lý ghế
     private final RabbitTemplate rabbitTemplate;
-
+    private final EventLogRepository eventLogRepository;
     @Transactional
     public Booking createBooking(BookingRequest request) {
         log.info("============== BẮT ĐẦU TẠO BOOKING ==============");
@@ -196,6 +190,13 @@ public class BookingService {
                     RabbitMQConfig.ROUTING_KEY_BOOKING,
                     event
             );
+            EventLog logEntry = new EventLog();
+            logEntry.setBookingId(savedBooking.getId());
+            logEntry.setEventType("BOOKING_CREATED_SENT");
+            logEntry.setPayload(event.toString()); // Lưu lại cục data đã bắn đi
+            eventLogRepository.save(logEntry);
+
+            log.info("📜 Đã ghi nhật ký EventLog cho đơn hàng #{}", savedBooking.getId());
             log.info("[3] Đã bắn event BOOKING_CREATED thành công lên RabbitMQ!");
         } catch (Exception e) {
             log.error("[LỖI] Không thể bắn event lên RabbitMQ: {}", e.getMessage(), e);
